@@ -1,0 +1,88 @@
+{
+  "name": "linterface",
+  "version": "0.1.0",
+  "description": "A sane interface for all your linters",
+  "repository": "https://github.com/stabai/linterface",
+  "author": "Shawn Tabai",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node main.ts"
+  },
+  "dependencies": {
+    "child_process": "^1.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.19",
+    "@typescript-eslint/eslint-plugin": "^5.12.1",
+    "@typescript-eslint/parser": "^5.12.1",
+    "eslint": "^8.9.0",
+    "git-changed-files": "^1.0.0",
+    "ts-node": "^10.5.0",
+    "typescript": "^4.5.5"
+  },
+  "eslintConfig": {
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "ecmaVersion": 2017,
+      "sourceType": "module"
+    },
+    "env": {
+      "es6": true
+    },
+    "ignorePatterns": [
+      "/dist/**/*",
+      "/node_modules/**/*"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended"
+    ],
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "rules": {
+      "object-curly-spacing": [
+        "warn",
+        "always"
+      ],
+      "indent": [
+        "error",
+        2
+      ],
+      "comma-style": [
+        "warn",
+        "last"
+      ],
+      "comma-dangle": [
+        "warn",
+        "always-multiline"
+      ],
+      "max-len": [
+        "warn",
+        120
+      ],
+      "max-lines": [
+        "warn",
+        300
+      ],
+      "linebreak-style": [
+        "error",
+        "unix"
+      ],
+      "quotes": [
+        "error",
+        "single"
+      ],
+      "semi": [
+        "error",
+        "always"
+      ],
+      "eol-last": [
+        "warn",
+        "always"
+      ]
+    }
+  }
+}
