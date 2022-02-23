@@ -1,6 +1,4 @@
-import { LinterPluginId } from "./plugins";
-
-type MessageSeverity = 'warning'|'error';
+type MessageSeverity = 'warning' | 'error';
 
 export interface Linter {
   name: string;
@@ -9,11 +7,13 @@ export interface Linter {
 
 export interface LinterCommandInterface {
   commandBuilder: (filenames: string[], configFile?: string) => string,
-  outputInterpreter: (stdout: string, stderr: string) => LinterOutput,
+  outputInterpreter: (processOutput: ProcessOutput) => LinterOutput,
 }
 
 export interface LinterOutput {
   files: LinterFileResult[];
+  errorCount: number;
+  warningCount: number;
 }
 
 export interface LinterMessage {
@@ -34,10 +34,11 @@ export interface LinterFileResult {
   source?: string;
 }
 
-export type FilesetScope = 'changed'|'all';
+export type FilesetScope = 'changed' | 'all';
 
-export interface ConfigEntry {
-  linterPlugin: LinterPluginId;
-  patterns: string[];
-  configFilePath?: string;
+export interface ProcessOutput {
+  success: boolean;
+  exitCode?: number;
+  stdout: string;
+  stderr: string;
 }

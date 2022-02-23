@@ -1,4 +1,4 @@
-import { Linter, LinterFileResult, LinterMessage, LinterOutput } from "../api";
+import { Linter, LinterFileResult, LinterMessage, LinterOutput } from '../api';
 
 const eslint: Linter = {
   name: 'eslint',
@@ -6,13 +6,18 @@ const eslint: Linter = {
     commandBuilder: (filenames, configFile) => {
       const cmd: string[] = ['eslint', '--format', 'json'];
       if (configFile != null && configFile.length > 0) {
-        cmd.push('--config', configFile)
+        cmd.push('--config', configFile);
       }
-      cmd.push(...filenames.map(f => `"${f}"`))
+      cmd.push(...filenames.map(f => `"${f}"`));
       return cmd.join(' ');
     },
-    outputInterpreter: (stdout): LinterOutput => {
-      const output = JSON.parse(stdout) as EslintJsonOutput;
+    outputInterpreter: (processOutput): LinterOutput => {
+      if (processOutput.stderr.length > 0) {
+        console.error(processOutput.stderr);
+      }
+      const output = JSON.parse(processOutput.stdout) as EslintJsonOutput;
+      let totalErrors = 0;
+      let totalWarnings = 0;
       const files = output.map((result): LinterFileResult => {
         const messages = result.messages.map((m): LinterMessage => ({
           ruleId: m.ruleId,
@@ -23,6 +28,8 @@ const eslint: Linter = {
           lineEnd: m.endLine,
           columnEnd: m.endColumn,
         }));
+        totalErrors += result.errorCount;
+        totalWarnings += result.warningCount;
         return {
           filePath: result.filePath,
           messages,
@@ -31,8 +38,12 @@ const eslint: Linter = {
           source: result.source,
         };
       });
-      return {files};
-    }
+      return {
+        files,
+        errorCount: totalErrors,
+        warningCount: totalWarnings,
+      };
+    },
   },
 };
 
@@ -40,7 +51,7 @@ export default eslint;
 
 interface EslintJsonOutputMessage {
   ruleId: string;
-  severity: 1|2;
+  severity: 1 | 2;
   message: string;
   line: number;
   column: number;

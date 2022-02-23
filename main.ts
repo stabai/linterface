@@ -1,16 +1,16 @@
-import linterPlugins, { runLint } from './plugins';
-import { ConfigEntry, LinterOutput } from './api';
+import chalk from 'chalk';
+import process from 'process';
+import linterPlugins, { ConfigEntry, runLint } from './plugins';
+import { LinterOutput } from './api';
 
 const config: ConfigEntry[] = [
   {
-    patterns: ["*.ts", "*.js", "*.tsx", "*.jsx"],
-    linterPlugin: "eslint",
-  },
-  {
-    patterns: ["*.json"],
-    linterPlugin: "eslint",
+    patterns: ['*.ts', '*.js', '*.tsx', '*.jsx', '*.json'],
+    linterPlugin: 'eslint',
   },
 ];
+
+const verboseMode = false;
 
 async function runApp() {
   const promises: Promise<LinterOutput>[] = [];
@@ -19,7 +19,29 @@ async function runApp() {
     promises.push(runLint('changed', linter, entry));
   }
   const results = await Promise.all(promises);
-  results.forEach(r => console.log(r));
+  let totalErrorCount = 0;
+  let totalWarningCount = 0;
+  for (const result of results) {
+    totalErrorCount += result.errorCount;
+    totalWarningCount += result.warningCount;
+    for (const file of result.files) {
+      if (verboseMode || file.errorCount + file.warningCount > 0) {
+        console.log(`${file.filePath} had ${file.errorCount} error(s) and ${file.warningCount} warning(s).`);
+      }
+    }
+  }
+  console.log();
+  console.log(
+    chalk.bold.blue('info')
+    + ` After all operations, there were ${totalErrorCount} error(s) and ${totalWarningCount} warning(s).`);
+  if (totalErrorCount > 0) {
+    process.exit(1);
+  }
 }
 
-runApp().catch(e => console.error(`Fatal Linterface error: ${e}`));
+runApp().catch(e => {
+  console.log();
+  console.error(`${chalk.bold.red('error')} Linterface had a fatal error`);
+  console.error(e);
+  process.exit(e.exitCode ?? 1);
+});
