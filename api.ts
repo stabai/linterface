@@ -17,8 +17,9 @@ export interface LinterOutput {
 }
 
 export interface LinterMessage {
-  ruleId: string;
+  ruleIds: string[];
   message: string;
+  contextUrl?: string;
   severity: MessageSeverity,
   lineStart: number;
   columnStart: number;

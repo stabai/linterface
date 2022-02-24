@@ -1,26 +1,24 @@
 import { Linter, LinterFileResult, LinterMessage, LinterOutput } from '../api';
+import { isNil } from '../tools/util';
 
 const eslint: Linter = {
   name: 'eslint',
   checkCommand: {
     commandBuilder: (filenames, configFile) => {
       const cmd: string[] = ['eslint', '--format', 'json'];
-      if (configFile != null && configFile.length > 0) {
+      if (!isNil(configFile) && configFile.length > 0) {
         cmd.push('--config', configFile);
       }
       cmd.push(...filenames.map(f => `"${f}"`));
       return cmd.join(' ');
     },
     outputInterpreter: (processOutput): LinterOutput => {
-      if (processOutput.stderr.length > 0) {
-        console.error(processOutput.stderr);
-      }
       const output = JSON.parse(processOutput.stdout) as EslintJsonOutput;
       let totalErrors = 0;
       let totalWarnings = 0;
       const files = output.map((result): LinterFileResult => {
         const messages = result.messages.map((m): LinterMessage => ({
-          ruleId: m.ruleId,
+          ruleIds: [m.ruleId],
           severity: m.severity === 1 ? 'warning' : 'error',
           message: m.message,
           lineStart: m.line,
