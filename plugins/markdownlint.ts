@@ -15,7 +15,7 @@ const markdownlint: Linter = {
     },
     outputInterpreter: (processOutput): LinterOutput => {
       const output = JSON.parse(processOutput.stderr) as MarkdownlintJsonOutput;
-      const messages = output.map((result): LinterMessage & {filePath: string} => {
+      const messages = output.map((result): LinterMessage & { filePath: string } => {
         const errorRange = result.errorRange ?? [0, 0];
         return {
           filePath: result.fileName,

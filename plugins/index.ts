@@ -12,7 +12,9 @@ export type LinterPluginId = keyof typeof linterPlugins;
 
 export default linterPlugins;
 
-export async function runLint(scope: FilesetScope, linter: Linter, entry: ConfigEntry): Promise<LinterOutput|undefined> {
+export async function runLint(
+  scope: FilesetScope, linter: Linter, entry: ConfigEntry)
+  : Promise<LinterOutput | undefined> {
   const filenames = await gitChangedFiles(scope, ...entry.patterns);
   if (filenames.length === 0) {
     return undefined;
@@ -61,7 +63,7 @@ export interface ConfigEntry {
   configFilePath?: string;
 }
 
-export function groupMessagesByFile(fileMessages: (LinterMessage&{filePath: string})[]): LinterFileResult[] {
+export function groupMessagesByFile(fileMessages: (LinterMessage & { filePath: string })[]): LinterFileResult[] {
   const fileMap = new Map<string, LinterFileResult>();
   for (const fileMsg of fileMessages) {
     const filePath = fileMsg.filePath;

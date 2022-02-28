@@ -18,7 +18,7 @@ const config: ConfigEntry[] = [
 const verboseMode = false;
 
 async function runApp() {
-  const promises: Promise<LinterOutput|undefined>[] = [];
+  const promises: Promise<LinterOutput | undefined>[] = [];
   for (const entry of config) {
     const linter = linterPlugins[entry.linterPlugin];
     promises.push(runLint('changed', linter, entry));

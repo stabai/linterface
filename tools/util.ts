@@ -8,7 +8,7 @@ export function removeKey<T, K extends keyof T>(obj: T, key: K): Omit<T, K> {
   return converted;
 }
 
-export function isNil(value: unknown): value is null|undefined {
+export function isNil(value: unknown): value is null | undefined {
   // Note the double equals, so this includes undefined.
   return value == null;
 }
