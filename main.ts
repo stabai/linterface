@@ -4,6 +4,7 @@ import linterPlugins, { ConfigEntry, runLint } from './plugins';
 import { LinterOutput } from './api';
 import { isNil } from './tools/util';
 
+// TODO: Load this from file
 const config: ConfigEntry[] = [
   {
     patterns: ['*.ts', '*.js', '*.tsx', '*.jsx', '*.json'],

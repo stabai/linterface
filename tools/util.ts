@@ -1,4 +1,4 @@
-export function assertExhaustive(_condition: never) {
+export function assertExhaustive(_impossibleValue: never) {
   throw new Error('Conditions should be exhaustive.');
 }
 
