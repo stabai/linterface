@@ -38,8 +38,8 @@
     ],
     "extends": [
       "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:json/recommended"
+      "plugin:json/recommended",
+      "plugin:@typescript-eslint/recommended"
     ],
     "plugins": [
       "@typescript-eslint"
@@ -54,7 +54,8 @@
       ],
       "indent": [
         "error",
-        2
+        2,
+        { "SwitchCase": 1 }
       ],
       "comma-style": [
         "warn",

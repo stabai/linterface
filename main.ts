@@ -3,6 +3,7 @@ import process from 'process';
 import linterPlugins, { ConfigEntry, runLint } from './plugins';
 import { LinterOutput } from './api';
 import { isNil } from './tools/util';
+import { logPrefixed, LogLevel, logAs, logExtraLine } from './tools/logger';
 
 // TODO: Load this from file
 const config: ConfigEntry[] = [
@@ -13,6 +14,10 @@ const config: ConfigEntry[] = [
   {
     patterns: ['*.md'],
     linterPlugin: 'markdownlint',
+  },
+  {
+    patterns: ['*.go'],
+    linterPlugin: 'golangcilint',
   },
 ];
 
@@ -35,22 +40,39 @@ async function runApp() {
     totalWarningCount += result.warningCount;
     for (const file of result.files) {
       if (verboseMode || file.errorCount + file.warningCount > 0) {
-        console.log(`${file.filePath} had ${file.errorCount} error(s) and ${file.warningCount} warning(s).`);
+        const level = getResultLevel(file.errorCount, file.warningCount);
+        logExtraLine();
+        logAs(level, `File ${file.filePath} had ${file.errorCount} error(s) and ${file.warningCount} warning(s).`);
+        for (const msg of file.messages) {
+          logPrefixed(msg.severity, `line ${msg.lineStart}, col ${msg.columnStart} [${msg.ruleIds}]: ${msg.message}`);
+        }
       }
     }
   }
-  console.log();
-  console.log(
-    chalk.bold.blue('info')
-    + ` After all operations, there were ${totalErrorCount} error(s) and ${totalWarningCount} warning(s).`);
+  const summaryLevel = getResultLevel(totalErrorCount, totalWarningCount);
+  logExtraLine();
+  logAs(
+    summaryLevel,
+    `After all operations, there were ${totalErrorCount} error(s) and ${totalWarningCount} warning(s).`,
+  );
   if (totalErrorCount > 0) {
     process.exit(1);
   }
 }
 
 runApp().catch(e => {
-  console.log();
+  logExtraLine();
   console.error(`${chalk.bold.red('error')} Linterface had a fatal error`);
   console.error(e);
   process.exit(e.exitCode ?? 1);
 });
+
+function getResultLevel(errorCount: number, warningCount: number): LogLevel {
+  if (errorCount > 0) {
+    return 'error';
+  } else if (warningCount > 0) {
+    return 'warning';
+  } else {
+    return 'info';
+  }
+}

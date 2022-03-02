@@ -2,11 +2,13 @@ import chalk from 'chalk';
 import { FilesetScope, Linter, LinterFileResult, LinterMessage, LinterOutput, ProcessOutput } from '../api';
 import exec, { ProcessException } from '../tools/exec';
 import { gitChangedFiles } from '../tools/git';
+import { logAs, logExtraLine, logPrefixed } from '../tools/logger';
 import { assertExhaustive, isNil, removeKey } from '../tools/util';
 import eslint from './eslint';
+import golangcilint from './golangci-lint';
 import markdownlint from './markdownlint';
 
-const linterPlugins = { eslint, markdownlint };
+const linterPlugins = { eslint, golangcilint, markdownlint };
 
 export type LinterPluginId = keyof typeof linterPlugins;
 
@@ -22,7 +24,8 @@ export async function runLint(
 
   const checkCommand = linter.checkCommand.commandBuilder(filenames, entry.configFilePath);
   const title = chalk.bold(`Running ${linter.name} for files matching: ${entry.patterns}`);
-  console.log(`\n${title}\n$ ${checkCommand}`);
+  logExtraLine();
+  logAs('debug', `${title}\n$ ${checkCommand}`);
   const process = exec(checkCommand);
   let result: ProcessOutput;
   try {
@@ -51,7 +54,7 @@ export async function runLint(
     }
     return linter.checkCommand.outputInterpreter(result);
   } catch (e) {
-    console.error(`${chalk.bold.red('error')} Unable to interpret output from ${linter.name}:`);
+    logPrefixed('error', `Unable to interpret output from ${linter.name}:`);
     console.error(result);
     throw e;
   }
