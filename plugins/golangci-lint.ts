@@ -2,8 +2,17 @@ import { groupMessagesByFile } from '.';
 import { Linter, LinterMessage, LinterOutput } from '../api';
 import { isNil } from '../tools/util';
 
-const golangcilint: Linter = {
+const golangcilint: Linter<'go' | 'brew'> = {
   name: 'golangci-lint',
+  packageSources: {
+    brew: {
+      taps: ['golangci/tap'],
+      packageName: 'golangci/tap/golangci-lint',
+    },
+    go: {
+      packageUrl: 'github.com/golangci/golangci-lint/cmd/golangci-lint',
+    },
+  },
   checkCommand: {
     commandBuilder: (filenames, configFile) => {
       const cmd: string[] = ['golangci-lint', '--out-format', 'json', 'run'];

@@ -1,33 +1,40 @@
 import chalk from 'chalk';
 import process from 'process';
-import linterPlugins, { ConfigEntry, runLint } from './plugins';
-import { LinterOutput } from './api';
+
+import linterPlugins, { Config, runLint } from './plugins';
+import { AnyLinter, LinterOutput } from './api';
 import { isNil } from './tools/util';
 import { logPrefixed, LogLevel, logAs, logExtraLine } from './tools/logger';
 
 // TODO: Load this from file
-const config: ConfigEntry[] = [
-  {
-    patterns: ['*.ts', '*.js', '*.tsx', '*.jsx', '*.json'],
-    linterPlugin: 'eslint',
+const config: Config = {
+  rules: [
+    {
+      patterns: ['*.ts', '*.js', '*.tsx', '*.jsx', '*.json'],
+      linterPlugin: 'eslint',
+    },
+    {
+      patterns: ['*.md'],
+      linterPlugin: 'markdownlint',
+    },
+    {
+      patterns: ['*.go'],
+      linterPlugin: 'golangcilint',
+    },
+  ],
+  defaultInstallStrategy: {
+    strategy: 'installOrError',
+    installationSourcePriority: ['go', 'npm', 'brew'],
   },
-  {
-    patterns: ['*.md'],
-    linterPlugin: 'markdownlint',
-  },
-  {
-    patterns: ['*.go'],
-    linterPlugin: 'golangcilint',
-  },
-];
+};
 
 const verboseMode = false;
 
 async function runApp() {
   const promises: Promise<LinterOutput | undefined>[] = [];
-  for (const entry of config) {
-    const linter = linterPlugins[entry.linterPlugin];
-    promises.push(runLint('changed', linter, entry));
+  for (const rule of config.rules) {
+    const linter = linterPlugins[rule.linterPlugin];
+    promises.push(runLint('changed', linter as AnyLinter, rule));
   }
   const results = await Promise.all(promises);
   let totalErrorCount = 0;

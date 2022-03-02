@@ -1,8 +1,13 @@
-import { Linter, LinterFileResult, LinterMessage, LinterOutput } from '../api';
+import { AnyLinter, Linter, LinterFileResult, LinterMessage, LinterOutput } from '../api';
 import { isNil } from '../tools/util';
 
-const eslint: Linter = {
+const eslint: Linter<'npm'> = {
   name: 'eslint',
+  packageSources: {
+    npm: {
+      packageName: 'eslint',
+    },
+  },
   checkCommand: {
     commandBuilder: (filenames, configFile) => {
       const cmd: string[] = ['eslint', '--format', 'json'];
@@ -44,6 +49,14 @@ const eslint: Linter = {
     },
   },
 };
+
+const foo: AnyLinter = eslint as AnyLinter;
+
+if (foo.packageSources['go'] != null) {
+  console.log('use go');
+} else if (foo.packageSources['npm'] != null) {
+  console.log('use npm');
+}
 
 export default eslint;
 

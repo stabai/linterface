@@ -2,8 +2,16 @@ import { groupMessagesByFile } from '.';
 import { Linter, LinterMessage, LinterOutput } from '../api';
 import { isNil } from '../tools/util';
 
-const markdownlint: Linter = {
+const markdownlint: Linter<'brew' | 'npm'> = {
   name: 'markdownlint',
+  packageSources: {
+    brew: {
+      packageName: 'markdownlint-cli',
+    },
+    npm: {
+      packageName: 'markdownlint-cli',
+    },
+  },
   checkCommand: {
     commandBuilder: (filenames, configFile) => {
       const cmd: string[] = ['markdownlint', '--json'];

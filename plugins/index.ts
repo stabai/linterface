@@ -1,5 +1,15 @@
 import chalk from 'chalk';
-import { FilesetScope, Linter, LinterFileResult, LinterMessage, LinterOutput, ProcessOutput } from '../api';
+
+import {
+  AnyLinter,
+  FilesetScope,
+  InstallationSource,
+  LinterFileResult,
+  LinterMessage,
+  LinterOutput,
+  NotInstalledStrategy,
+  ProcessOutput,
+} from '../api';
 import exec, { ProcessException } from '../tools/exec';
 import { gitChangedFiles } from '../tools/git';
 import { logAs, logExtraLine, logPrefixed } from '../tools/logger';
@@ -15,7 +25,7 @@ export type LinterPluginId = keyof typeof linterPlugins;
 export default linterPlugins;
 
 export async function runLint(
-  scope: FilesetScope, linter: Linter, entry: ConfigEntry)
+  scope: FilesetScope, linter: AnyLinter, entry: ConfigRule)
   : Promise<LinterOutput | undefined> {
   const filenames = await gitChangedFiles(scope, ...entry.patterns);
   if (filenames.length === 0) {
@@ -60,10 +70,16 @@ export async function runLint(
   }
 }
 
-export interface ConfigEntry {
+export interface ConfigRule {
   linterPlugin: LinterPluginId;
   patterns: string[];
   configFilePath?: string;
+}
+
+export interface Config {
+  rules: ConfigRule[];
+  // TODO: Implement automatic installation
+  defaultInstallStrategy?: NotInstalledStrategy<InstallationSource>;
 }
 
 export function groupMessagesByFile(fileMessages: (LinterMessage & { filePath: string })[]): LinterFileResult[] {
