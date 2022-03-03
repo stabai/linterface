@@ -1,12 +1,14 @@
 import chalk from 'chalk';
 
 export const emphasisChalk = chalk.bold.blue;
+export const successChalk = chalk.bold.green;
 export const errorChalk = chalk.bold.red;
 export const warningChalk = chalk.bold.yellow;
 
 const levels = Object.freeze({
   'debug': { chalk, logger: console.debug },
   'info': { chalk: emphasisChalk, logger: console.info },
+  'success': { chalk: successChalk, logger: console.info },
   'warning': { chalk: warningChalk, logger: console.warn },
   'error': { chalk: errorChalk, logger: console.error },
 });
@@ -32,4 +34,19 @@ export function logAs(level: LogLevel, message: string): void {
 
 export function logExtraLine(): void {
   console.log();
+}
+
+interface ResultSummary {
+  errorCount: number;
+  warningCount: number;
+}
+
+export function getResultLevel(summary: ResultSummary): LogLevel {
+  if (summary.errorCount > 0) {
+    return 'error';
+  } else if (summary.warningCount > 0) {
+    return 'warning';
+  } else {
+    return 'success';
+  }
 }

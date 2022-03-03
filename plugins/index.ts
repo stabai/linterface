@@ -1,5 +1,3 @@
-import chalk from 'chalk';
-
 import {
   AnyLinter,
   FilesetScope,
@@ -12,13 +10,14 @@ import {
 } from '../api';
 import exec, { ProcessException } from '../tools/exec';
 import { gitChangedFiles } from '../tools/git';
-import { logAs, logExtraLine, logPrefixed } from '../tools/logger';
+import { getResultLevel, logAs, logExtraLine, logPrefixed } from '../tools/logger';
 import { assertExhaustive, isNil, removeKey } from '../tools/util';
+import actionlint from './actionlint';
 import eslint from './eslint';
 import golangcilint from './golangci-lint';
 import markdownlint from './markdownlint';
 
-const linterPlugins = { eslint, golangcilint, markdownlint };
+const linterPlugins = { actionlint, eslint, golangcilint, markdownlint };
 
 export type LinterPluginId = keyof typeof linterPlugins;
 
@@ -28,25 +27,30 @@ export async function runLint(
   scope: FilesetScope, linter: AnyLinter, entry: ConfigRule)
   : Promise<LinterOutput | undefined> {
   const filenames = await gitChangedFiles(scope, ...entry.patterns);
+
+  logExtraLine();
+  const checkCommand = linter.checkCommand.commandBuilder(filenames, entry.configFilePath);
+  logAs('info', `Running ${linter.name} for files matching: ${entry.patterns.join(', ')}`);
+
   if (filenames.length === 0) {
+    logAs('success', `No files to check with ${linter.name}!`);
     return undefined;
+  } else {
+    logAs('info', `Found files to check with ${linter.name}: [${filenames.join(', ')}]`);
   }
 
-  const checkCommand = linter.checkCommand.commandBuilder(filenames, entry.configFilePath);
-  const title = chalk.bold(`Running ${linter.name} for files matching: ${entry.patterns}`);
-  logExtraLine();
-  logAs('debug', `${title}\n$ ${checkCommand}`);
+  logAs('debug', `$ ${checkCommand}`);
   const process = exec(checkCommand);
-  let result: ProcessOutput;
+  let output: ProcessOutput;
   try {
-    result = {
+    output = {
       success: true,
       exitCode: process.child.exitCode ?? undefined,
       ...await process,
     };
   } catch (e) {
     const processError = e as ProcessException;
-    result = {
+    output = {
       success: false,
       stdout: processError.stdout,
       stderr: processError.stderr,
@@ -55,17 +59,21 @@ export async function runLint(
   }
 
   try {
-    if ((result.exitCode ?? 0) === 0 && result.stdout.length === 0 && result.stderr.length === 0) {
-      return {
+    let result: LinterOutput;
+    if ((output.exitCode ?? 0) === 0 && output.stdout.length === 0 && output.stderr.length === 0) {
+      result = {
         files: [],
         errorCount: 0,
         warningCount: 0,
       };
+    } else {
+      result = linter.checkCommand.outputInterpreter(output);
     }
-    return linter.checkCommand.outputInterpreter(result);
+    logLinterResults(linter, result);
+    return result;
   } catch (e) {
     logPrefixed('error', `Unable to interpret output from ${linter.name}:`);
-    console.error(result);
+    console.error(output);
     throw e;
   }
 }
@@ -111,4 +119,19 @@ export function groupMessagesByFile(fileMessages: (LinterMessage & { filePath: s
     }
   }
   return Array.from(fileMap.values());
+}
+
+function logLinterResults(linter: AnyLinter, result: LinterOutput) {
+  for (const file of result.files) {
+    if (file.errorCount + file.warningCount > 0) {
+      const level = getResultLevel(file);
+      logExtraLine();
+      logAs(level, `File ${file.filePath} had ${file.errorCount} error(s) and ${file.warningCount} warning(s).`);
+      for (const msg of file.messages) {
+        logPrefixed(msg.severity, `line ${msg.lineStart}, col ${msg.columnStart} [${msg.ruleIds}]: ${msg.message}`);
+      }
+    }
+  }
+  const level = getResultLevel(result);
+  logAs(level, `Linter ${linter.name} had ${result.errorCount} error(s) and ${result.warningCount} warning(s).`);
 }

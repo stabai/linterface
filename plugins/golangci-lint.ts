@@ -2,7 +2,7 @@ import { groupMessagesByFile } from '.';
 import { Linter, LinterMessage, LinterOutput } from '../api';
 import { isNil } from '../tools/util';
 
-const golangcilint: Linter<'go' | 'brew'> = {
+const golangcilint: Linter<'brew' | 'go'> = {
   name: 'golangci-lint',
   packageSources: {
     brew: {
@@ -53,7 +53,6 @@ interface GolangcilintJsonOutputMessage {
   Severity: string;
   SourceLines: string[],
   Pos: GolangcilintJsonOutputPos,
-
 }
 
 interface GolangcilintJsonOutput {
