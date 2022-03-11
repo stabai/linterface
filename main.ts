@@ -25,7 +25,7 @@ const config: Config = {
       patterns: ['example/**.proto'],
       linterPlugins: ['bufBreaking', 'bufLint'],
       params: {
-        workspaceRoot: 'example',
+        bufWorkspaceRoot: 'example',
       },
     },
     {
