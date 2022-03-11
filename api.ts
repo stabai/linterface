@@ -11,7 +11,7 @@ export interface Linter<S extends InstallationSource> {
 export type AnyLinter = Linter<InstallationSource>;
 
 export interface LinterCommandInterface {
-  commandBuilder: (filenames: string[], configFile?: string) => string,
+  commandBuilder: (filenames: string[], configFile?: string, params?: Record<string, unknown>) => string,
   outputInterpreter: (processOutput: ProcessOutput) => LinterOutput,
 }
 

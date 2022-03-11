@@ -10,7 +10,7 @@ import {
 } from '../api';
 import exec, { ProcessException } from '../tools/exec';
 import { gitChangedFiles } from '../tools/git';
-import { getResultLevel, logAs, logExtraLine, logPrefixed } from '../tools/logger';
+import { BufferedLogger, getResultLevel, Logger } from '../tools/logger';
 import { assertExhaustive, isNil, removeKey } from '../tools/util';
 import actionlint from './actionlint';
 import { bufBreaking, bufLint } from './buf';
@@ -28,19 +28,20 @@ export async function runLint(
   scope: FilesetScope, linter: AnyLinter, entry: ConfigRule)
   : Promise<LinterOutput | undefined> {
   const filenames = await gitChangedFiles(scope, ...entry.patterns);
+  const logger = new BufferedLogger();
 
-  logExtraLine();
-  const checkCommand = linter.checkCommand.commandBuilder(filenames, entry.configFilePath);
-  logAs('info', `Running ${linter.name} for files matching: ${entry.patterns.join(', ')}`);
+  logger.logNewLine();
+  const checkCommand = linter.checkCommand.commandBuilder(filenames, entry.configFilePath, entry.params);
+  logger.logAs('info', `Running ${linter.name} for files matching: ${entry.patterns.join(', ')}`);
 
   if (filenames.length === 0) {
-    logAs('success', `No files to check with ${linter.name}!`);
+    logger.logAs('success', `No files to check with ${linter.name}!`);
     return undefined;
   } else {
-    logAs('info', `Found files to check with ${linter.name}: [${filenames.join(', ')}]`);
+    logger.logAs('info', `Found files to check with ${linter.name}: [${filenames.join(', ')}]`);
   }
 
-  logAs('debug', `$ ${checkCommand}`);
+  logger.logAs('debug', `$ ${checkCommand}`);
   const process = exec(checkCommand);
   let output: ProcessOutput;
   try {
@@ -70,12 +71,14 @@ export async function runLint(
     } else {
       result = linter.checkCommand.outputInterpreter(output);
     }
-    logLinterResults(linter, result);
+    logLinterResults(linter, result, logger);
     return result;
   } catch (e) {
-    logPrefixed('error', `Unable to interpret output from ${linter.name}:`);
-    console.error(output);
+    logger.logPrefixed('error', `Unable to interpret output from ${linter.name}:`);
+    logger.logAs('error', String(output));
     throw e;
+  } finally {
+    logger.flushToConsole();
   }
 }
 
@@ -83,6 +86,7 @@ export interface ConfigRule {
   linterPlugins: LinterPluginId[];
   patterns: string[];
   configFilePath?: string;
+  params?: Record<string, unknown>;
 }
 
 export interface Config {
@@ -122,19 +126,19 @@ export function groupMessagesByFile(fileMessages: (LinterMessage & { filePath: s
   return Array.from(fileMap.values());
 }
 
-function logLinterResults(linter: AnyLinter, result: LinterOutput) {
+function logLinterResults(linter: AnyLinter, result: LinterOutput, logger: Logger) {
   for (const file of result.files) {
     if (file.errorCount + file.warningCount > 0) {
       const level = getResultLevel(file);
-      logExtraLine();
-      logAs(level, `File ${file.filePath} had ${file.errorCount} error(s) and ${file.warningCount} warning(s).`);
+      logger.logNewLine();
+      logger.logAs(level, `File ${file.filePath} had ${file.errorCount} error(s) and ${file.warningCount} warning(s).`);
       for (const msg of file.messages) {
         const position =
           !isNil(msg.startPosition) ? `line ${msg.startPosition.line}, col ${msg.startPosition.column} ` : '';
-        logPrefixed(msg.severity, `${position}[${msg.ruleIds}]: ${msg.message}`);
+        logger.logPrefixed(msg.severity, `${position}[${msg.ruleIds}]: ${msg.message}`);
       }
     }
   }
   const level = getResultLevel(result);
-  logAs(level, `Linter ${linter.name} had ${result.errorCount} error(s) and ${result.warningCount} warning(s).`);
+  logger.logAs(level, `Linter ${linter.name} had ${result.errorCount} error(s) and ${result.warningCount} warning(s).`);
 }

@@ -2,9 +2,9 @@ import chalk from 'chalk';
 import process from 'process';
 
 import linterPlugins, { Config, runLint } from './plugins';
-import { AnyLinter, LinterOutput } from './api';
+import { AnyLinter, FilesetScope, LinterOutput } from './api';
 import { isNil } from './tools/util';
-import { logAs, logExtraLine, getResultLevel } from './tools/logger';
+import { getResultLevel, consoleLogger } from './tools/logger';
 
 // TODO: Load this from file
 const config: Config = {
@@ -22,8 +22,11 @@ const config: Config = {
       linterPlugins: ['golangcilint'],
     },
     {
-      patterns: ['*.proto'],
+      patterns: ['example/**.proto'],
       linterPlugins: ['bufBreaking', 'bufLint'],
+      params: {
+        workspaceRoot: 'example',
+      },
     },
     {
       patterns: ['.github/workflows/**.yml', '.github/actions/**.yml'],
@@ -37,15 +40,15 @@ const config: Config = {
 };
 
 // TODO: Determine this based on CLI command
-const scope = 'changed';
+const scope: FilesetScope = 'all';
 
 async function runApp() {
   const promises: Promise<LinterOutput | undefined>[] = [];
-  logAs('info', `Using fileset scope "${scope}"`);
+  consoleLogger.logAs('info', `Using fileset scope "${scope}"`);
   for (const rule of config.rules) {
     for (const linterId of rule.linterPlugins) {
       const linter = linterPlugins[linterId];
-      promises.push(runLint('changed', linter as AnyLinter, rule));
+      promises.push(runLint(scope, linter as AnyLinter, rule));
     }
   }
   const results = await Promise.all(promises);
@@ -59,8 +62,8 @@ async function runApp() {
     totalWarningCount += result.warningCount;
   }
   const summaryLevel = getResultLevel({ errorCount: totalErrorCount, warningCount: totalWarningCount });
-  logExtraLine();
-  logAs(
+  consoleLogger.logNewLine();
+  consoleLogger.logAs(
     summaryLevel,
     `After all operations, there were ${totalErrorCount} error(s) and ${totalWarningCount} warning(s).`,
   );
@@ -70,7 +73,7 @@ async function runApp() {
 }
 
 runApp().catch(e => {
-  logExtraLine();
+  consoleLogger.logNewLine();
   console.error(`${chalk.bold.red('error')} Linterface had a fatal error`);
   console.error(e);
   process.exit(e.exitCode ?? 1);

@@ -5,8 +5,7 @@ import { isNil } from '../tools/util';
 interface BufCommand {
   name: string;
   severity: MessageSeverity;
-  commandName: string;
-  extraCommandArgs?: string[];
+  commandName: 'lint' | 'breaking';
 }
 
 function buf(command: BufCommand): Linter<'brew' | 'go'> {
@@ -20,15 +19,30 @@ function buf(command: BufCommand): Linter<'brew' | 'go'> {
       },
     },
     checkCommand: {
-      commandBuilder: (filenames, configFile) => {
-        const cmd: string[] = ['buf', command.commandName, '--error-format', 'json'];
-        if (!isNil(command.extraCommandArgs)) {
-          cmd.push(...command.extraCommandArgs);
+      commandBuilder: (filenames, configFile, params) => {
+        if (params?.mainBranch != null && typeof params.mainBranch !== 'string') {
+          throw new Error('Main branch must be a string if specified');
         }
-        cmd.push('example/proto'); // TODO: Remove this and pass in the target folder somehow
+        if (params?.workspaceRoot != null && typeof params.workspaceRoot !== 'string') {
+          throw new Error('Workspace root must be a string if specified');
+        }
+
+        const cmd: string[] = ['buf', command.commandName, '--error-format', 'json'];
+        const workspaceRoot = params?.workspaceRoot ?? '';
+        if (workspaceRoot.length > 0) {
+          cmd.push(workspaceRoot);
+        }
+
+        if (command.commandName === 'breaking') {
+          const mainBranch = params?.mainBranch ?? 'main';
+          const subdirFlag = workspaceRoot.length === 0 ? '' : `,subdir=${workspaceRoot}`;
+          cmd.push('--against', `.git#branch=${mainBranch}${subdirFlag}`);
+        }
+
         if (!isNil(configFile) && configFile?.length > 0) {
           cmd.push('--config', configFile);
         }
+
         cmd.push(...filenames.map(f => `--path '${f}'`));
         return cmd.join(' ');
       },
@@ -37,6 +51,7 @@ function buf(command: BufCommand): Linter<'brew' | 'go'> {
           .split('\n')
           .filter(it => it.length > 0)
           .map(it => JSON.parse(it) as BufLintJsonOutputMessage);
+
         const messages = output.map((result): LinterMessage & { filePath: string } => {
           return {
             filePath: result.path,
@@ -68,7 +83,6 @@ export const bufBreaking = buf({
   name: 'buf breaking',
   severity: 'error',
   commandName: 'breaking',
-  extraCommandArgs: ['--against', '.git#branch=main'],
 });
 
 interface BufLintJsonOutputMessage {
