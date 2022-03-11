@@ -13,11 +13,12 @@ import { gitChangedFiles } from '../tools/git';
 import { getResultLevel, logAs, logExtraLine, logPrefixed } from '../tools/logger';
 import { assertExhaustive, isNil, removeKey } from '../tools/util';
 import actionlint from './actionlint';
+import { bufBreaking, bufLint } from './buf';
 import eslint from './eslint';
 import golangcilint from './golangci-lint';
 import markdownlint from './markdownlint';
 
-const linterPlugins = { actionlint, eslint, golangcilint, markdownlint };
+const linterPlugins = { actionlint, bufBreaking, bufLint, eslint, golangcilint, markdownlint };
 
 export type LinterPluginId = keyof typeof linterPlugins;
 
@@ -79,7 +80,7 @@ export async function runLint(
 }
 
 export interface ConfigRule {
-  linterPlugin: LinterPluginId;
+  linterPlugins: LinterPluginId[];
   patterns: string[];
   configFilePath?: string;
 }
@@ -128,7 +129,9 @@ function logLinterResults(linter: AnyLinter, result: LinterOutput) {
       logExtraLine();
       logAs(level, `File ${file.filePath} had ${file.errorCount} error(s) and ${file.warningCount} warning(s).`);
       for (const msg of file.messages) {
-        logPrefixed(msg.severity, `line ${msg.lineStart}, col ${msg.columnStart} [${msg.ruleIds}]: ${msg.message}`);
+        const position =
+          !isNil(msg.startPosition) ? `line ${msg.startPosition.line}, col ${msg.startPosition.column} ` : '';
+        logPrefixed(msg.severity, `${position}[${msg.ruleIds}]: ${msg.message}`);
       }
     }
   }

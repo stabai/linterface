@@ -1,5 +1,5 @@
 import { groupMessagesByFile } from '.';
-import { Linter, LinterMessage, LinterOutput } from '../api';
+import { getPosition, Linter, LinterMessage, LinterOutput } from '../api';
 import { isNil } from '../tools/util';
 
 const markdownlint: Linter<'brew' | 'npm'> = {
@@ -31,10 +31,8 @@ const markdownlint: Linter<'brew' | 'npm'> = {
           severity: 'error',
           message: result.ruleDescription,
           contextUrl: result.ruleInformation,
-          lineStart: result.lineNumber,
-          columnStart: errorRange[0],
-          lineEnd: result.lineNumber,
-          columnEnd: errorRange[0] + errorRange[1],
+          startPosition: getPosition(result.lineNumber, errorRange[0]),
+          endPosition: getPosition(result.lineNumber, errorRange[0] + errorRange[1]),
         };
       });
       return {

@@ -1,5 +1,5 @@
 import { groupMessagesByFile } from '.';
-import { Linter, LinterMessage, LinterOutput } from '../api';
+import { getPosition, Linter, LinterMessage, LinterOutput } from '../api';
 import { isNil } from '../tools/util';
 
 const actionlint: Linter<'brew' | 'go'> = {
@@ -25,12 +25,15 @@ const actionlint: Linter<'brew' | 'go'> = {
           message: result.message,
           severity: 'error',
           ruleIds: [result.kind],
-          lineStart: result.line,
-          columnStart: result.column,
+          startPosition: getPosition(result.line, result.column),
         };
       });
-      
-      return { files: groupMessagesByFile(messages), errorCount: 0, warningCount: 0 };
+
+      return {
+        files: groupMessagesByFile(messages),
+        errorCount: messages.length,
+        warningCount: 0,
+      };
     },
   },
 };
@@ -40,8 +43,8 @@ export default actionlint;
 interface ActionlintJsonOutputMessage {
   message: string;
   filepath: string;
-  line: number;
-  column: number;
+  line?: number;
+  column?: number;
   kind: string;
 }
 

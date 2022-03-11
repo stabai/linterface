@@ -1,5 +1,5 @@
 import { groupMessagesByFile } from '.';
-import { Linter, LinterMessage, LinterOutput } from '../api';
+import { getPosition, Linter, LinterMessage, LinterOutput } from '../api';
 import { isNil } from '../tools/util';
 
 const golangcilint: Linter<'brew' | 'go'> = {
@@ -32,8 +32,7 @@ const golangcilint: Linter<'brew' | 'go'> = {
           ruleIds: [result.FromLinter],
           severity: severity,
           message: result.Text,
-          lineStart: pos.Line,
-          columnStart: pos.Column,
+          startPosition: getPosition(pos.Line, pos.Column),
         };
       });
       return {

@@ -11,19 +11,23 @@ const config: Config = {
   rules: [
     {
       patterns: ['*.ts', '*.js', '*.tsx', '*.jsx', '*.json', '*.jsonc', '*.json5'],
-      linterPlugin: 'eslint',
+      linterPlugins: ['eslint'],
     },
     {
       patterns: ['*.md'],
-      linterPlugin: 'markdownlint',
+      linterPlugins: ['markdownlint'],
     },
     {
       patterns: ['*.go'],
-      linterPlugin: 'golangcilint',
+      linterPlugins: ['golangcilint'],
+    },
+    {
+      patterns: ['*.proto'],
+      linterPlugins: ['bufBreaking', 'bufLint'],
     },
     {
       patterns: ['.github/workflows/**.yml', '.github/actions/**.yml'],
-      linterPlugin: 'actionlint',
+      linterPlugins: ['actionlint'],
     },
   ],
   defaultInstallStrategy: {
@@ -39,8 +43,10 @@ async function runApp() {
   const promises: Promise<LinterOutput | undefined>[] = [];
   logAs('info', `Using fileset scope "${scope}"`);
   for (const rule of config.rules) {
-    const linter = linterPlugins[rule.linterPlugin];
-    promises.push(runLint('changed', linter as AnyLinter, rule));
+    for (const linterId of rule.linterPlugins) {
+      const linter = linterPlugins[linterId];
+      promises.push(runLint('changed', linter as AnyLinter, rule));
+    }
   }
   const results = await Promise.all(promises);
   let totalErrorCount = 0;

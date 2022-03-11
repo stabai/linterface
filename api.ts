@@ -1,4 +1,6 @@
-type MessageSeverity = 'warning' | 'error';
+import { isNil } from './tools/util';
+
+export type MessageSeverity = 'warning' | 'error';
 
 export interface Linter<S extends InstallationSource> {
   name: string;
@@ -19,15 +21,18 @@ export interface LinterOutput {
   warningCount: number;
 }
 
+export interface CodePosition {
+  line: number;
+  column: number;
+}
+
 export interface LinterMessage {
   ruleIds: string[];
   message: string;
   contextUrl?: string;
   severity: MessageSeverity,
-  lineStart: number;
-  columnStart: number;
-  lineEnd?: number;
-  columnEnd?: number;
+  startPosition?: CodePosition;
+  endPosition?: CodePosition;
 }
 
 export interface LinterFileResult {
@@ -68,7 +73,7 @@ interface PackageSources {
 
 export type InstallationSource = keyof PackageSources;
 
-type SpecificPackageSources<S extends InstallationSource> = Required<Pick<PackageSources, S>> & Record<string, unknown>;
+type SpecificPackageSources<S extends InstallationSource> = Required<Pick<PackageSources, S>>;
 
 interface InstallationStrategy<S extends InstallationSource> {
   // TODO: Add prompt options if in an interactive console?
@@ -81,6 +86,14 @@ interface NotInstalledFailureStrategy {
 }
 
 export type NotInstalledStrategy<S extends InstallationSource> = InstallationStrategy<S> | NotInstalledFailureStrategy;
+
+export function getPosition(line: number | undefined, column: number | undefined): CodePosition | undefined {
+  if (isNil(line) || isNil(column)) {
+    return undefined;
+  } else {
+    return { line, column };
+  }
+}
 
 // TODO: Support multiple execution modes
 // enum ExecutionMode {

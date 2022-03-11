@@ -1,4 +1,4 @@
-import { AnyLinter, Linter, LinterFileResult, LinterMessage, LinterOutput } from '../api';
+import { getPosition, Linter, LinterFileResult, LinterMessage, LinterOutput } from '../api';
 import { isNil } from '../tools/util';
 
 const eslint: Linter<'npm'> = {
@@ -26,10 +26,8 @@ const eslint: Linter<'npm'> = {
           ruleIds: [m.ruleId],
           severity: m.severity === 1 ? 'warning' : 'error',
           message: m.message,
-          lineStart: m.line,
-          columnStart: m.column,
-          lineEnd: m.endLine,
-          columnEnd: m.endColumn,
+          startPosition: getPosition(m.line, m.column),
+          endPosition: getPosition(m.endLine, m.endColumn),
         }));
         totalErrors += result.errorCount;
         totalWarnings += result.warningCount;
@@ -50,24 +48,16 @@ const eslint: Linter<'npm'> = {
   },
 };
 
-const foo: AnyLinter = eslint as AnyLinter;
-
-if (foo.packageSources['go'] != null) {
-  console.log('use go');
-} else if (foo.packageSources['npm'] != null) {
-  console.log('use npm');
-}
-
 export default eslint;
 
 interface EslintJsonOutputMessage {
   ruleId: string;
   severity: 1 | 2;
   message: string;
-  line: number;
-  column: number;
-  endLine: number;
-  endColumn: number;
+  line?: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
 }
 
 interface EslintJsonOutputFileResult {
