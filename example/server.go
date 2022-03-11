@@ -15,6 +15,15 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+type PetStoreService struct {
+	pb.UnimplementedPetStoreServer
+}
+
+func NewPetStore() *PetStoreService {
+	svc := PetStoreService{}
+	return &svc
+}
+
 func main() {
 	port, err := strconv.Atoi(os.Getenv("GRPC_PORT"))
 	if err != nil {
@@ -35,7 +44,7 @@ func initializeServer(port int) {
 	s := grpc.NewServer()
 	reflection.Register(s)
 	grpc_health_v1.RegisterHealthServer(s, health.NewServer())
-	pb.RegisterPetStoreServer(s, pb.NewPetStore())
+	pb.RegisterPetStoreServer(s, NewPetStore())
 
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
