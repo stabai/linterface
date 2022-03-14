@@ -9,10 +9,10 @@ const actionlint: Linter<'brew' | 'go'> = {
     brew: { packageName: 'actionlint' },
   },
   checkCommand: {
-    commandBuilder: (filenames, configFile) => {
+    commandBuilder: (filenames, _config, rule) => {
       const cmd: string[] = ['actionlint', '-format \'{{json .}}\''];
-      if (!isNil(configFile) && configFile?.length > 0) {
-        cmd.push('-config-file', configFile);
+      if (!isNil(rule.configFilePath) && rule.configFilePath?.length > 0) {
+        cmd.push('-config-file', rule.configFilePath);
       }
       cmd.push(...filenames.map(f => `'${f}'`));
       return cmd.join(' ');

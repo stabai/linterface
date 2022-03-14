@@ -1,3 +1,4 @@
+import { Config, ConfigRule } from './plugins';
 import { isNil } from './tools/util';
 
 export type MessageSeverity = 'warning' | 'error';
@@ -11,7 +12,7 @@ export interface Linter<S extends InstallationSource> {
 export type AnyLinter = Linter<InstallationSource>;
 
 export interface LinterCommandInterface {
-  commandBuilder: (filenames: string[], configFile?: string, params?: Record<string, unknown>) => string,
+  commandBuilder: (filenames: string[], config: Config, rule: ConfigRule) => string,
   outputInterpreter: (processOutput: ProcessOutput) => LinterOutput,
 }
 

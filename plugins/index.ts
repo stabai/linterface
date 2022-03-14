@@ -25,13 +25,13 @@ export type LinterPluginId = keyof typeof linterPlugins;
 export default linterPlugins;
 
 export async function runLint(
-  scope: FilesetScope, linter: AnyLinter, entry: ConfigRule)
+  scope: FilesetScope, linter: AnyLinter, config: Config, entry: ConfigRule)
   : Promise<LinterOutput | undefined> {
   const filenames = await gitChangedFiles(scope, ...entry.patterns);
   const logger = new BufferedLogger();
 
   logger.logNewLine();
-  const checkCommand = linter.checkCommand.commandBuilder(filenames, entry.configFilePath, entry.params);
+  const checkCommand = linter.checkCommand.commandBuilder(filenames, config, entry);
   logger.logAs('info', `Running ${linter.name} for files matching: ${entry.patterns.join(', ')}`);
 
   if (filenames.length === 0) {
@@ -82,17 +82,37 @@ export async function runLint(
   }
 }
 
+export interface BufParams {
+  bufWorkspaceRoot?: string;
+}
+
 export interface ConfigRule {
   linterPlugins: LinterPluginId[];
   patterns: string[];
   configFilePath?: string;
-  params?: Record<string, unknown>;
+  bufParams?: BufParams;
+}
+
+export interface GlobalParams {
+  mainGitBranch?: string;
 }
 
 export interface Config {
   rules: ConfigRule[];
+  globalParams?: GlobalParams;
   // TODO: Implement automatic installation
   defaultInstallStrategy?: NotInstalledStrategy<InstallationSource>;
+}
+
+const bufParamsPlugins: LinterPluginId[] = ['bufLint', 'bufBreaking'];
+
+export function validateConfig(config: Config): Config {
+  for (const rule of config.rules) {
+    if (rule.bufParams != null && rule.linterPlugins.filter(l => bufParamsPlugins.includes(l)).length === 0) {
+      throw new Error('Specifying bufParams in forbidden unless the lint rule includes bufLint and/or bufBreaking');
+    }
+  }
+  return config;
 }
 
 export function groupMessagesByFile(fileMessages: (LinterMessage & { filePath: string })[]): LinterFileResult[] {

@@ -19,28 +19,21 @@ function buf(command: BufCommand): Linter<'brew' | 'go'> {
       },
     },
     checkCommand: {
-      commandBuilder: (filenames, configFile, params) => {
-        if (params?.gitMainBranch != null && typeof params.gitMainBranch !== 'string') {
-          throw new Error('Git main branch must be a string if specified');
-        }
-        if (params?.bufWorkspaceRoot != null && typeof params.bufWorkspaceRoot !== 'string') {
-          throw new Error('Workspace root must be a string if specified');
-        }
-
+      commandBuilder: (filenames, config, rule) => {
         const cmd: string[] = ['buf', command.commandName, '--error-format', 'json'];
-        const bufWorkspaceRoot = params?.bufWorkspaceRoot ?? '';
+        const bufWorkspaceRoot = rule.bufParams?.bufWorkspaceRoot ?? '';
         if (bufWorkspaceRoot.length > 0) {
           cmd.push(bufWorkspaceRoot);
         }
 
         if (command.commandName === 'breaking') {
-          const mainBranch = params?.gitMainBranch ?? 'main';
+          const mainBranch = config.globalParams?.mainGitBranch ?? 'main';
           const subdirFlag = bufWorkspaceRoot.length === 0 ? '' : `,subdir=${bufWorkspaceRoot}`;
           cmd.push('--against', `.git#branch=${mainBranch}${subdirFlag}`);
         }
 
-        if (!isNil(configFile) && configFile?.length > 0) {
-          cmd.push('--config', configFile);
+        if (!isNil(rule.configFilePath) && rule.configFilePath.length > 0) {
+          cmd.push('--config', rule.configFilePath);
         }
 
         cmd.push(...filenames.map(f => `--path '${f}'`));

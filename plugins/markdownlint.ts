@@ -13,10 +13,10 @@ const markdownlint: Linter<'brew' | 'npm'> = {
     },
   },
   checkCommand: {
-    commandBuilder: (filenames, configFile) => {
+    commandBuilder: (filenames, _config, rule) => {
       const cmd: string[] = ['markdownlint', '--json'];
-      if (!isNil(configFile) && configFile?.length > 0) {
-        cmd.push('--config', configFile);
+      if (!isNil(rule.configFilePath) && rule.configFilePath.length > 0) {
+        cmd.push('--config', rule.configFilePath);
       }
       cmd.push(...filenames.map(f => `"${f}"`));
       return cmd.join(' ');

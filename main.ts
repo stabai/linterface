@@ -1,13 +1,13 @@
 import chalk from 'chalk';
 import process from 'process';
 
-import linterPlugins, { Config, runLint } from './plugins';
+import linterPlugins, { Config, runLint, validateConfig } from './plugins';
 import { AnyLinter, FilesetScope, LinterOutput } from './api';
 import { isNil } from './tools/util';
 import { getResultLevel, consoleLogger } from './tools/logger';
 
 // TODO: Load this from file
-const config: Config = {
+const config: Config = validateConfig({
   rules: [
     {
       patterns: ['*.ts', '*.js', '*.tsx', '*.jsx', '*.json', '*.jsonc', '*.json5'],
@@ -24,7 +24,7 @@ const config: Config = {
     {
       patterns: ['example/**.proto'],
       linterPlugins: ['bufBreaking', 'bufLint'],
-      params: {
+      bufParams: {
         bufWorkspaceRoot: 'example',
       },
     },
@@ -37,7 +37,7 @@ const config: Config = {
     strategy: 'installOrError',
     installationSourcePriority: ['brew', 'go', 'npm'],
   },
-};
+});
 
 // TODO: Determine this based on CLI command
 const scope: FilesetScope = 'all';
@@ -48,7 +48,7 @@ async function runApp() {
   for (const rule of config.rules) {
     for (const linterId of rule.linterPlugins) {
       const linter = linterPlugins[linterId];
-      promises.push(runLint(scope, linter as AnyLinter, rule));
+      promises.push(runLint(scope, linter as AnyLinter, config, rule));
     }
   }
   const results = await Promise.all(promises);
